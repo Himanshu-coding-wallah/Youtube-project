@@ -5,6 +5,8 @@
 - intall mongoose `npm install mongoose`
 - intall dotenv `npm install dotenv `
 - intall express `npm install express `
+- intall cors `npm install cors `
+- intall cookie-parser `npm install cookie-parser `
 - create `.env`
 - create `.gitignore`
 - create `.prettierrc`

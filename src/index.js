@@ -4,9 +4,13 @@ import connectDB from "./db/dbConnection.js"
 import { app } from "./app.js"
 
 
-// this function returns a promise
+// this function returns a promise because it is an async function
 connectDB()
 .then(()=>{
+    app.on("error", (error)=>{
+        console.log("error in express-->", error)
+        throw error
+    })
     app.listen(process.env.PORT || 8000, ()=>{
         console.log(`server running on port: ${process.env.PORT}`)
     })
