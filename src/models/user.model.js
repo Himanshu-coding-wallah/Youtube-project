@@ -25,6 +25,10 @@ const userSchema = new Schema({
         trim: true,
         index: true
     },
+    gender: {
+        type: String,
+        enum: ["MALE", "FEMALE"]
+    },
     avatar: {
         type: String, // cloudinary string
         required: true

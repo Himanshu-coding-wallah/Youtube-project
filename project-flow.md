@@ -1,12 +1,15 @@
 # Production Code Of Backend
 - do `npm init` in root folder
-- intall nodemon `npm install --save-dev nodemon `
-- intall prettier `npm install -D prettier `
-- intall mongoose `npm install mongoose`
-- intall dotenv `npm install dotenv `
-- intall express `npm install express `
-- intall cors `npm install cors `
-- intall cookie-parser `npm install cookie-parser `
+- install nodemon `npm install --save-dev nodemon `
+- install prettier `npm install -D prettier `
+- install mongoose `npm install mongoose`
+- install dotenv `npm install dotenv `
+- install express `npm install express `
+- install cors `npm install cors `
+- install bcrypt `npm install bcrypt `
+- install aggregatePaginate `npm install mongoose-aggregate-paginate-v2 `
+- install multer `npm install multer` 
+- install cloudinary `npm install cloudinary` 
 - create `.env`
 - create `.gitignore`
 - create `.prettierrc`
@@ -217,7 +220,204 @@ export {apiResponse}
 ```
 ## Creating Models
 
-mongodb automaticaaly create a unique id when it saves    
-mongodb stores in BSON 
-user model  
-video model  
+mongodb automatically create a unique id when it saves new schemas  
+mongodb stores in BSON format 
+
+### 1. User model  
+- We will create a pre middleware to hash passwords before saving to database.
+- We will create a custom method to compare the passwords, that return true or false
+- Than we will create methods to generate tokens 
+```js
+import mongoose, {Schema} from "mongoose";
+import jwt from "jsonwebtoken"
+import bcrypt from "bcrypt"
+
+
+const userSchema = new Schema({
+    userName: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true,
+        index: true // it helps in searching
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true
+    },
+    fullName: {
+        type: String,
+        required: true,
+        trim: true,
+        index: true
+    },
+    gender: {
+        type: String,
+        enum: ["MALE", "FEMALE"]  // it give choices
+    },
+    avatar: {
+        type: String, // cloudinary string
+        required: true
+    },
+    coverImage: {
+        type: String, // cloudinary string
+    },
+
+    // watch history will have ids of watched videos
+    watchHistory: [{
+        type: Schema.Types.ObjectId,
+        ref: "Video"
+    }],
+    password: {
+        type: String,
+        required: [true, "password is required"]
+    },
+    refreshToken: {
+        type: String
+    }
+},{timestamps: true})
+
+// hook
+userSchema.pre("save", async function(next){
+    if(!this.isModified("password")) return next();
+    this.password = bcrypt.hash(this.password, 10)
+    next()
+})
+
+userSchema.methods.isPasswordCorrect = async function(password){
+    return await bcrypt.compare(password, this.password)
+}
+
+userSchema.methods.generateAccessToken = function(){
+    jwt.sign(
+    {
+        _id: this._id,
+        email: this.email,
+        userName: this.userName,
+        fullName: this.fullName
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+    }
+)
+}
+userSchema.methods.generateRefreshToken = function(){
+    jwt.sign(
+    {
+        _id: this._id
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+    }
+)
+}
+
+export const User = mongoose.model("User", userSchema)
+ 
+
+```
+### 2. Video Model
+- Paginate will help us to write aggregation pipeline
+```js
+import mongoose, {Schema} from "mongoose";
+import aggregatePaginate  from "mongoose-aggregate-paginate-v2"
+
+const videoSchema = new Schema({
+    videoFile: {
+        type: String, // cloudinary string
+        required: true,
+    },
+    thumbnail: {
+        type: String,
+        required: true,
+    },
+    title: {
+        type: String,
+        required: true,
+    },
+    description: {
+        type: String,
+        required: true,
+    },
+    duration: {
+        type: Number, // cloudinary 
+        required: true,
+    },
+    views: {
+        type: Number,
+        default: 0
+    },
+    isPublished: {
+        type: Boolean,
+        default: true,
+    },
+    owner: {
+        type: Schema.Types.ObjectId,
+        ref: "User"
+    }
+},{timestamps: true})
+
+videoSchema.plugin(aggregatePaginate)
+
+export const Video = mongoose.model("Video", videoSchema)
+```
+
+## Setting up Multer and Cloudinary files
+- Multer stores files on server and returns a path
+- cloudinary is used to store the files on the cloud  
+- Then the files from the server are deleted  
+### Multer
+```js
+// the file parameter have access to file uploaded in the form, express dont have this access
+// original name is not a good practice because user might upload multiple files of same name
+// this function return the path of uploaded file
+
+import multer from "multer"
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/temp")
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+})
+
+export const upload = multer({ storage,})
+```
+
+### Cloudinary 
+```js
+// Files are already on the server, we will upload them to cloud
+
+import { v2 as cloudinary } from 'cloudinary'
+import fs from "node:fs"
+
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const uploadOnCloudinary = async(localFilePath)=>{
+    try {
+        if(!localFilePath)return "file not uploaded";
+        const response = await cloudinary.uploader.upload(localFilePath, {
+            resource_type: "auto"
+        })
+        console.log("file is uploaded successfully", response.url)
+        return response
+    } catch (error) {
+        fs.unlinkSync(localFilePath)
+        return null
+    }   
+}
+
+export {uploadOnCloudinary}
+```
