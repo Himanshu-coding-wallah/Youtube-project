@@ -106,4 +106,110 @@ connectDB()
 
 ```
 ---
+## Small step
+The database connection function will be called multiple time in different files , so it is better to create a utility to call the code and return response
+- `utils` folder
+    - `asyncHandler.js` file
+
+```js
+// using promises
+
+const asyncHandler = (requestHandler)=>{
+    (req, res, next)=>{
+        Promise.resolve((requestHandler(req, res, next))).catch((error)=>next(error))
+    }
+}
+
+export {asyncHandler} 
+```
+ 
+
+```js
+// using try catch
+// const asyncHandler = (fn)=>(
+//     async(err, req, res,next)=>{
+//         try {
+//             await fn(req, res, next)
+//         } catch (error) {
+//             res.status(error.code || 500).json({
+//                 success: false,
+//                 message: err.message
+//             })
+//         }
+//     }
+// )
+
+// export {asyncHandler}   
+```
+## Creating Server
+```js
+import express from "express"
+import cors from "cors"
+import cookieParser from "cookie-parser"
+
+const app = express()
+
+// setitng up cors
+// parse incoming data into json
+// parse the url
+// use public folder to access static files
+// allows cookies and bearer tokens
+
+app.use(cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
+}))
+
+app.use(express.json({limit: "16kb"}))
+app.use(express.urlencoded({extended: true, limit: "16kb"}))
+app.use(express.static("public"))
+app.use(cookieParser())
+
+
+export {app}
+
+```
+
+## Creating custom api errors and response utils
+we create these utils to standardize the api errors and api responses messages.  
+Now we can create a middleware and when we want to send error message or response message, we can call these utilities
+### API Error handling
+```js
+class apiErrors extends Error{
+    constructor(
+        statusCode,
+        message= "something went wrong",
+        errors= [],
+        stack= ""
+    ){
+        super(message)
+        this.statusCode= statusCode
+        this.data = null
+        this.message = message
+        this.success = false
+        this.errors = errors
+
+        if(stack){
+            this.stack = stack
+        }else{
+            Error.captureStackTrace(this, this.constructor)
+        }
+    }
+}
+
+export {apiErrors}
+```
+### API Response handling
+```js
+class apiResponse{
+    constructor(statusCode, data, message= "success"){
+        this.statusCode = statusCode
+        this.data = data
+        this.message = message
+        this.success = statusCode<400
+    }
+}
+
+export {apiResponse}
+```
 
