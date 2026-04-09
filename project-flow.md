@@ -113,6 +113,7 @@ The database connection function will be called multiple time in different files
 
 ```js
 // using promises
+// this accepts a function 
 
 const asyncHandler = (requestHandler)=>{
     (req, res, next)=>{
@@ -126,6 +127,8 @@ export {asyncHandler}
 
 ```js
 // using try catch
+// this accepts a function 
+
 // const asyncHandler = (fn)=>(
 //     async(err, req, res,next)=>{
 //         try {
@@ -212,4 +215,9 @@ class apiResponse{
 
 export {apiResponse}
 ```
+## Creating Models
 
+mongodb automaticaaly create a unique id when it saves    
+mongodb stores in BSON 
+user model  
+video model  
