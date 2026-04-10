@@ -110,7 +110,10 @@ connectDB()
 ```
 ---
 ## Small step
-The database connection function will be called multiple time in different files , so it is better to create a utility to call the code and return response
+The database connection function will be called multiple time in different files , so it is better to create a utility to call the code and return response.  
+This utililty will be used for other things also where we return a promise    
+It is mainly for error handling
+
 - `utils` folder
     - `asyncHandler.js` file
 
