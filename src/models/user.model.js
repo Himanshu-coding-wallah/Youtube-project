@@ -27,7 +27,8 @@ const userSchema = new Schema({
     },
     gender: {
         type: String,
-        enum: ["MALE", "FEMALE"]
+        enum: ["MALE", "FEMALE"],
+        required: true,
     },
     avatar: {
         type: String, // cloudinary string
@@ -86,4 +87,3 @@ userSchema.methods.generateRefreshToken = function(){
 }
 
 export const User = mongoose.model("User", userSchema)
- 

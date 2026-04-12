@@ -12,7 +12,10 @@ const generateAccessAndRefreshToken = async(userId)=>{
         const accessToken =user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
 
+        // assigning the generated refresh token to the user instance
         user.refreshToken = refreshToken
+
+        // now we save, but if we save normally then everything will be saved so password will be validated, so to avoid this we use validateBeforeSave: false
         await user.save({validateBeforeSave: false})
 
         return {accessToken, refreshToken}
@@ -20,8 +23,6 @@ const generateAccessAndRefreshToken = async(userId)=>{
         throw new apiErrors(500, "something went wrong while generating access and refresh token")
     }
 }
-
-
 
 const registerUser =  asyncHandler(async(req, res)=>{
     // res.status(200).json({
@@ -98,7 +99,6 @@ const registerUser =  asyncHandler(async(req, res)=>{
 
 })
 
-
 const loginUser = asyncHandler(async(req, res)=>{
     // req.body => data
     // username or email validationn
@@ -114,6 +114,8 @@ const loginUser = asyncHandler(async(req, res)=>{
     }
 
     //ya to username , ya to email dhund do
+    // this is the user we are extracting from the database so it will have acess to all the methods that we have defined by userSchema.methods 
+    // while the User is the model and it will have the methods like find , findone
     const user = await User.findOne({
         $or: [{userName}, {email}]
     })
@@ -130,12 +132,16 @@ const loginUser = asyncHandler(async(req, res)=>{
 
     const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
 
+
+    // this step ,we extracted user from database in line 112 and generated the tokens in 136, so it might be possible that the user may not have the tokens 
+    // so we again find the user by the id and then sends the data back to user , remove password and refreshtoken
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     // setting up cookies
+    // this is a security step
     const options = {
-        httpOnly: true,
-        secure: true
+        httpOnly: true, // cookies cannot be accessed in browser
+        secure: true // will only be sent over https, not on http
     }
 
     return res
@@ -146,8 +152,7 @@ const loginUser = asyncHandler(async(req, res)=>{
         new apiResponse(
             200,
             {
-                user: loggedInUser, accessToken,
-                refreshToken
+                user: loggedInUser, accessToken, refreshToken
             },
             "user loggedin successfully"
         )
@@ -160,6 +165,8 @@ const loginUser = asyncHandler(async(req, res)=>{
 })
 
 const logOut = asyncHandler(async(req, res)=>{
+    // now we need user id to log the user out, but we dont have the accesss to the id, because the req object sends data like usermane, password,
+    // we solve this issue by middleware -> auth.middleware
     await User.findByIdAndUpdate(
         req.user._id,
         {
