@@ -25,11 +25,6 @@ const userSchema = new Schema({
         trim: true,
         index: true
     },
-    gender: {
-        type: String,
-        enum: ["MALE", "FEMALE"],
-        required: true,
-    },
     avatar: {
         type: String, // cloudinary string
         required: true
@@ -50,10 +45,9 @@ const userSchema = new Schema({
     }
 },{timestamps: true})
 
-userSchema.pre("save", async function(next){
-    if(!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password, 10)
-    next()
+userSchema.pre("save", async function(){
+    if(!this.isModified("password")) return;
+    this.password = await bcrypt.hash(this.password, 10);
 })
 
 userSchema.methods.isPasswordCorrect = async function(password){
@@ -61,7 +55,7 @@ userSchema.methods.isPasswordCorrect = async function(password){
 }
 
 userSchema.methods.generateAccessToken = function(){
-    jwt.sign(
+    return jwt.sign(
     {
         _id: this._id,
         email: this.email,
@@ -75,7 +69,7 @@ userSchema.methods.generateAccessToken = function(){
 )
 }
 userSchema.methods.generateRefreshToken = function(){
-    jwt.sign(
+    return jwt.sign(
     {
         _id: this._id
     },

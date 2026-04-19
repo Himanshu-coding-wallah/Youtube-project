@@ -43,6 +43,8 @@ const registerUser =  asyncHandler(async(req, res)=>{
     const {fullName, email, userName, password} = req.body
     console.log(email)
 
+    console.log(req.body)
+
     // validation
     if(
         [fullName, email, userName, password].some((field)=>(field?.trim() === ""))
@@ -61,6 +63,7 @@ const registerUser =  asyncHandler(async(req, res)=>{
     // checking for images
     const avatarLocalPath = req.files?.avatar?.[0]?.path 
     const coverImageLocalPath = req.files?.coverImage?.[0]?.path
+    console.log(req.files)
 
     if(!avatarLocalPath){
         throw new apiErrors(400, "avatar file is required")
@@ -84,7 +87,7 @@ const registerUser =  asyncHandler(async(req, res)=>{
         userName: userName.toLowerCase(),
     })
 
-    const createdUser = await user.findById(user._id).select(
+    const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     )
     
@@ -109,7 +112,7 @@ const loginUser = asyncHandler(async(req, res)=>{
     const {email, userName, password} = req.body
     
     // username ya email , kisi se bhi login ho jayega
-    if(!userName || !email){
+    if(!(userName || !email)){
         throw new apiErrors(400, "username or password is required")
     }
 
@@ -185,8 +188,8 @@ const logOut = asyncHandler(async(req, res)=>{
     }
     return res
     .status(200)
-    .clearCookies("accessToken", options)
-    .clearCookies("refreshToken", options)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
     .json(new apiResponse(200, {}, "user logged out"))
 })
 export {registerUser, loginUser, logOut }

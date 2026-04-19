@@ -1,8 +1,7 @@
-import { User } from "../models/user.model";
-import { asyncHandler } from "../utils/asyncHandler";
-import jwt from "jsonwebtoken"
 import { User } from "../models/user.model.js";
-import { apiErrors } from "../utils/apiErrors";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import jwt from "jsonwebtoken"
+import { apiErrors } from "../utils/apiErrors.js";
 
 // first we will verfiy the user, we already sent the cookies so we will check if the tokens are same in database and on user, if same that means that the user is truly loggin
 
